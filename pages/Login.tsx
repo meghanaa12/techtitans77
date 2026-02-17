@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { UserRole, User, NetworkType } from '../types';
-import { supabase, isSupabaseConfigured } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { 
   BrainCircuit, GraduationCap, School, Globe, ArrowLeft, 
   ChevronRight, Lock, Users, AlertCircle, Mail, Key, Building2,
-  BookOpen, Settings, AlertTriangle
+  BookOpen, Zap, AlertTriangle
 } from 'lucide-react';
 
 interface LoginProps {
@@ -29,10 +29,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
 
   const validate = () => {
     setError('');
-    if (!isSupabaseConfigured) {
-      setError('System configuration error. Please contact admin.');
-      return false;
-    }
     if (!email.trim() || !email.includes('@')) {
       setError('A valid email address is required.');
       return false;
@@ -47,6 +43,26 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
       if (!department.trim()) { setError('Department name is required.'); return false; }
     }
     return true;
+  };
+
+  // Mock login for demo purposes
+  const handleDemoMode = (role: UserRole) => {
+    const network: NetworkType = role === UserRole.OUTSIDER ? 'GENERAL' : 'EDU';
+    onLogin({
+      id: 'demo-user-' + Math.random().toString(36).substr(2, 9),
+      name: fullName || 'Scholar Jagan',
+      email: email || 'demo@cognihub.edu',
+      role,
+      network,
+      points: 500,
+      xp: 250,
+      streak: 1,
+      badges: ['Demo Pioneer'],
+      collegeName: collegeName || 'Demo Institute',
+      department: department || 'Engineering',
+      currentSemester: parseInt(semester),
+      specialization: specialization || 'General'
+    });
   };
 
   const handleAuth = async (role: UserRole) => {
@@ -75,7 +91,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
         });
         
         if (signUpError) throw signUpError;
-        if (!data.user) throw new Error("Registration failed to return a user.");
+        if (!data.user) throw new Error("Registration failed.");
 
         onLogin({
           id: data.user.id,
@@ -83,7 +99,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
           email: email,
           role,
           network,
-          points: role === UserRole.OUTSIDER ? 0 : 500,
+          points: 500,
           xp: 100,
           streak: 1,
           badges: ['Newcomer'],
@@ -96,53 +112,34 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        if (!data.user) throw new Error("Authentication failed.");
-
-        const { data: profile, error: profileError } = await supabase
+        
+        const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
           .single();
 
-        if (profileError || !profile) {
-          // If profile fetch fails, create a temporary session user
-          onLogin({
-            id: data.user.id,
-            name: data.user.user_metadata?.full_name || 'Scholar',
-            email: data.user.email || '',
-            role: data.user.user_metadata?.role || UserRole.STUDENT,
-            network: data.user.user_metadata?.network || 'EDU',
-            points: 0,
-            xp: 0,
-            streak: 1,
-            badges: [],
-            collegeName: data.user.user_metadata?.college_name
-          });
-          return;
-        }
-
         onLogin({
-          id: profile.id,
-          name: profile.full_name,
-          email: profile.email,
-          role: profile.role,
-          network: profile.network,
-          points: profile.points,
-          xp: profile.xp,
-          streak: profile.streak,
-          badges: profile.badges || [],
-          avatar: profile.avatar_url,
-          collegeName: profile.college_name,
-          department: profile.department,
-          currentSemester: profile.current_semester,
-          specialization: profile.specialization,
-          officeHours: profile.office_hours,
-          bio: profile.bio
+          id: data.user.id,
+          name: profile?.full_name || data.user.user_metadata?.full_name || 'Scholar',
+          email: data.user.email || '',
+          role: profile?.role || data.user.user_metadata?.role || UserRole.STUDENT,
+          network: profile?.network || data.user.user_metadata?.network || 'EDU',
+          points: profile?.points || 0,
+          xp: profile?.xp || 0,
+          streak: profile?.streak || 1,
+          badges: profile?.badges || [],
+          collegeName: profile?.college_name || data.user.user_metadata?.college_name
         });
       }
     } catch (e: any) {
-      console.error("Authentication Error:", e);
-      setError(e.message || 'Authentication failed. Please check your credentials.');
+      console.error("Auth Error:", e);
+      // Specifically handle "Failed to fetch" by providing a demo bypass
+      if (e.message?.includes('fetch') || e.name === 'TypeError') {
+        setError('Network Connection Failed. Database unreachable.');
+      } else {
+        setError(e.message || 'Authentication failed.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -200,10 +197,18 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
             </div>
 
             {error && (
-              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl animate-in fade-in duration-300">
-                <div className="text-rose-400 text-[11px] font-bold flex items-center gap-2">
-                  <AlertCircle size={16} /> {error}
+              <div className="p-5 bg-rose-500/10 border border-rose-500/20 rounded-[2rem] animate-in slide-in-from-top-2">
+                <div className="text-rose-400 text-[11px] font-bold flex items-center gap-3">
+                  <AlertCircle size={18} /> {error}
                 </div>
+                {error.includes('Connection') && (
+                  <button 
+                    onClick={() => handleDemoMode(UserRole.STUDENT)}
+                    className="mt-4 w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-indigo-500/30"
+                  >
+                    <Zap size={12} /> Launch in Demo Access Mode
+                  </button>
+                )}
               </div>
             )}
           </div>
