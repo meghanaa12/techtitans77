@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cogniHUB - Academic Intelligence Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+          font-family: 'Inter', sans-serif; 
+          cursor: none !important; /* Force hide default cursor */
+        }
+        
+        /* Custom Mouse Follower */
+        #cursor-dot {
+          position: fixed;
+          width: 6px;
+          height: 6px;
+          background: #6366f1;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 10000;
+          transform: translate(-50%, -50%);
+        }
+
+        #cursor-ring {
+          position: fixed;
+          width: 30px;
+          height: 30px;
+          border: 1.5px solid rgba(99, 102, 241, 0.5);
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 9999;
+          transform: translate(-50%, -50%);
+          transition: width 0.3s ease, height 0.3s ease, border 0.3s ease, background 0.3s ease;
+        }
+
+        .cursor-active #cursor-ring {
+          width: 60px;
+          height: 60px;
+          background: rgba(99, 102, 241, 0.1);
+          border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        /* Animations */
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0); }
+          50% { transform: translateY(-30px) rotate(8deg); }
+        }
+
+        @keyframes float-reverse {
+          0%, 100% { transform: translateY(0) rotate(0); }
+          50% { transform: translateY(30px) rotate(-8deg); }
+        }
+
+        .animate-float { animation: float 8s ease-in-out infinite; }
+        .animate-float-slow { animation: float 12s ease-in-out infinite; }
+        .animate-float-reverse { animation: float-reverse 10s ease-in-out infinite; }
+        
+        .staggered-in > * {
+          opacity: 0;
+          transform: translateY(20px);
+          animation: slideUp 0.6s ease forwards;
+        }
+
+        @keyframes slideUp {
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* Doodle Styling */
+        .doodle-path {
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.5;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.566.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.39.7",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+  }
+}
+</script>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
+    <div id="root"></div>
+    <script>
+        const dot = document.getElementById('cursor-dot');
+        const ring = document.getElementById('cursor-ring');
+        
+        let mouseX = 0;
+        let mouseY = 0;
+        let ringX = 0;
+        let ringY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+          dot.style.left = mouseX + 'px';
+          dot.style.top = mouseY + 'px';
+        });
+
+        // Smooth follow for ring
+        function animate() {
+          ringX += (mouseX - ringX) * 0.15;
+          ringY += (mouseY - ringY) * 0.15;
+          ring.style.left = ringX + 'px';
+          ring.style.top = ringY + 'px';
+          requestAnimationFrame(animate);
+        }
+        animate();
+
+        document.addEventListener('mouseover', (e) => {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'A' || e.target.closest('.cursor-trigger')) {
+            document.body.classList.add('cursor-active');
+          }
+        });
+
+        document.addEventListener('mouseout', (e) => {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'A' || e.target.closest('.cursor-trigger')) {
+            document.body.classList.remove('cursor-active');
+          }
+        });
+    </script>
+</body>
+</html>

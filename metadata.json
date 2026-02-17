@@ -1,0 +1,7 @@
+{
+  "name": "Copy of cogniHUB: Campus Resource Network",
+  "description": "A collaborative academic resource sharing platform featuring role-based access for students, teachers, admins, and outsiders with AI-powered summarization.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
