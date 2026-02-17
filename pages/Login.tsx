@@ -13,7 +13,7 @@ interface LoginProps {
   onBack: () => void;
 }
 
-// Registry of accounts from the user's Supabase screenshot
+// Exact registry from the user's Supabase screenshot
 const DEMO_ACCOUNTS: Record<string, any> = {
   'admin@cognihub.edu': {
     id: 'a1111111-1111-1111-1111-111111111111',
@@ -92,11 +92,28 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
       setError('Password must be at least 6 characters.');
       return false;
     }
-    if (mode === 'REGISTER') {
-      if (!fullName.trim()) { setError('Full name is required.'); return false; }
-      if (!collegeName.trim()) { setError('Institution name is required.'); return false; }
-    }
     return true;
+  };
+
+  const handleDemoAccess = () => {
+    const demoUser = DEMO_ACCOUNTS[email.toLowerCase()];
+    if (demoUser) {
+      onLogin(demoUser);
+    } else {
+      // Default fallback if email isn't in specific list
+      onLogin({
+        id: 'demo-guest',
+        name: fullName || 'Demo User',
+        email: email || 'guest@cognihub.edu',
+        role: UserRole.STUDENT,
+        network: 'EDU',
+        points: 100,
+        xp: 100,
+        streak: 1,
+        badges: ['Demo Access'],
+        collegeName: 'Demo Institute'
+      });
+    }
   };
 
   const handleAuth = async (role: UserRole) => {
@@ -104,13 +121,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
     setIsLoading(true);
     setError('');
     
-    // DEMO BYPASS: If password is '1122334455' and email is in our demo list
-    if (password === '1122334455' && DEMO_ACCOUNTS[email]) {
-      setTimeout(() => {
-        onLogin(DEMO_ACCOUNTS[email]);
-        setIsLoading(false);
-      }, 800);
-      return;
+    // DEMO BYPASS: Immediate check for universal password
+    if (password === '1122334455') {
+      const demoUser = DEMO_ACCOUNTS[email.toLowerCase()];
+      if (demoUser) {
+        setTimeout(() => {
+          onLogin(demoUser);
+          setIsLoading(false);
+        }, 500);
+        return;
+      }
     }
 
     try {
@@ -134,10 +154,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
         });
         
         if (signUpError) throw signUpError;
-        if (!data.user) throw new Error("Registration failed.");
-
         onLogin({
-          id: data.user.id,
+          id: data.user!.id,
           name: fullName,
           email: email,
           role,
@@ -146,12 +164,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
           xp: 100,
           streak: 1,
           badges: ['Newcomer'],
-          collegeName,
-          department,
-          currentSemester: parseInt(semester),
-          specialization
+          collegeName
         });
-
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
@@ -164,21 +178,22 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
 
         onLogin({
           id: data.user.id,
-          name: profile?.full_name || data.user.user_metadata?.full_name || 'Scholar',
+          name: profile?.full_name || 'Scholar',
           email: data.user.email || '',
-          role: profile?.role || data.user.user_metadata?.role || UserRole.STUDENT,
-          network: profile?.network || data.user.user_metadata?.network || 'EDU',
+          role: profile?.role || UserRole.STUDENT,
+          network: profile?.network || 'EDU',
           points: profile?.points || 0,
           xp: profile?.xp || 0,
           streak: profile?.streak || 1,
           badges: profile?.badges || [],
-          collegeName: profile?.college_name || data.user.user_metadata?.college_name
+          collegeName: profile?.college_name
         });
       }
     } catch (e: any) {
       console.error("Auth Error:", e);
+      // Detailed error for Vercel troubleshooting
       if (e.message?.includes('fetch') || e.name === 'TypeError') {
-        setError('Connection Error. Try Demo Credentials (Password: 1122334455)');
+        setError('Network Connection Failed. Database unreachable.');
       } else {
         setError(e.message || 'Authentication failed.');
       }
@@ -211,19 +226,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
           </div>
 
           <div className="space-y-4">
-            {mode === 'REGISTER' && (
-              <>
-                <div className="relative group">
-                  <input type="text" placeholder="Full Legal Name" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500 focus:bg-white/10 transition-all font-medium" />
-                  <Users size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500" />
-                </div>
-                <div className="relative group">
-                  <input type="text" placeholder="Institution Name" value={collegeName} onChange={e => setCollegeName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500 focus:bg-white/10 transition-all font-medium" />
-                  <Building2 size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500" />
-                </div>
-              </>
-            )}
-            
             <div className="relative group">
               <input type="email" placeholder="Campus Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500 transition-all font-medium" />
               <Mail size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500" />
@@ -239,13 +241,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                 <div className="text-rose-400 text-[11px] font-bold flex items-center gap-3">
                   <AlertCircle size={18} /> {error}
                 </div>
+                <button 
+                  onClick={handleDemoAccess}
+                  className="mt-4 w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-indigo-500/30"
+                >
+                  <Zap size={12} /> Launch in Demo Access Mode
+                </button>
               </div>
             )}
           </div>
 
           {!selectedNetwork ? (
             <div className="grid grid-cols-1 gap-4 mt-8">
-              <button onClick={() => validate() && setSelectedNetwork('EDU')} className="group flex items-center gap-6 p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:border-indigo-500 hover:bg-white/10 transition-all text-left shadow-lg">
+              <button onClick={() => setSelectedNetwork('EDU')} className="group flex items-center gap-6 p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:border-indigo-500 hover:bg-white/10 transition-all text-left shadow-lg">
                 <div className="bg-indigo-500/20 p-5 rounded-2xl text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all"><Lock size={28} /></div>
                 <div className="flex-1">
                   <p className="text-xl font-black text-white leading-tight">Institutional Tier</p>
@@ -253,7 +261,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                 </div>
                 <ChevronRight size={20} className="text-slate-700 group-hover:text-indigo-500 transition-all" />
               </button>
-              <button onClick={() => validate() && setSelectedNetwork('GENERAL')} className="group flex items-center gap-6 p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:border-slate-400 hover:bg-white/10 transition-all text-left shadow-lg">
+              <button onClick={() => setSelectedNetwork('GENERAL')} className="group flex items-center gap-6 p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:border-slate-400 hover:bg-white/10 transition-all text-left shadow-lg">
                 <div className="bg-slate-500/20 p-5 rounded-2xl text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-900 transition-all"><Globe size={28} /></div>
                 <div className="flex-1">
                   <p className="text-xl font-black text-white leading-tight">Public Tier</p>
@@ -289,7 +297,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                 )}
               </div>
               
-              {/* Special Admin Direct Access (matching screenshot) */}
               {selectedNetwork === 'EDU' && (
                 <button onClick={() => handleAuth(UserRole.ADMIN)} className="w-full mt-4 flex items-center justify-center gap-3 p-4 bg-slate-900 border border-indigo-500/30 rounded-2xl hover:bg-indigo-900 transition-all group">
                    <ShieldCheck className="text-indigo-400 group-hover:scale-110 transition-transform" size={20} />
