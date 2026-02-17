@@ -10,11 +10,11 @@
     <style>
         body { 
           font-family: 'Inter', sans-serif; 
-          cursor: none !important; /* Hide default cursor */
+          cursor: none !important;
           background-color: #f8fafc;
+          margin: 0;
         }
         
-        /* Custom Mouse Follower */
         #cursor-dot {
           position: fixed;
           width: 8px;
@@ -24,7 +24,6 @@
           pointer-events: none;
           z-index: 10000;
           transform: translate(-50%, -50%);
-          display: block;
         }
 
         #cursor-ring {
@@ -37,72 +36,37 @@
           z-index: 9999;
           transform: translate(-50%, -50%);
           transition: width 0.3s cubic-bezier(0.23, 1, 0.32, 1), height 0.3s cubic-bezier(0.23, 1, 0.32, 1), background 0.3s ease;
-          display: block;
         }
 
         .cursor-hover #cursor-ring {
           width: 50px;
           height: 50px;
-          background: rgba(99, 102, 241, 0.08);
+          background: rgba(99, 102, 241, 0.1);
           border-color: rgba(99, 102, 241, 0.6);
         }
 
-        /* Animations */
         @keyframes float {
           0%, 100% { transform: translateY(0) rotate(0); }
           50% { transform: translateY(-30px) rotate(10deg); }
         }
-
-        @keyframes float-alt {
-          0%, 100% { transform: translateY(0) rotate(0); }
-          50% { transform: translateY(-20px) rotate(-8deg); }
-        }
-
         .animate-float { animation: float 10s ease-in-out infinite; }
-        .animate-float-slow { animation: float-alt 14s ease-in-out infinite; }
-        .animate-float-fast { animation: float 7s ease-in-out infinite; }
-        
-        /* Entrance Animations */
-        .staggered-in > * {
-          opacity: 0;
-          transform: translateY(20px);
-          animation: slideUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-        }
-
-        @keyframes slideUp {
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* Doodle Styling */
-        .doodle-svg {
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.2;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
-        }
+        .doodle-svg { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
     </style>
-    <!-- Polyfill for process.env used by some libraries -->
     <script>
-      window.process = { 
-        env: { 
-          NODE_ENV: 'production'
-        } 
-      };
+      window.process = { env: { NODE_ENV: 'production' } };
     </script>
 <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.566.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.39.7",
-    "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.566.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
   }
 }
 </script>
@@ -111,14 +75,14 @@
     <div id="cursor-dot"></div>
     <div id="cursor-ring"></div>
     <div id="root"></div>
+    
+    <!-- This is the critical missing piece for Vercel/Vite -->
+    <script type="module" src="/index.tsx"></script>
+
     <script>
         const dot = document.getElementById('cursor-dot');
         const ring = document.getElementById('cursor-ring');
-        
-        let mouseX = 0;
-        let mouseY = 0;
-        let ringX = 0;
-        let ringY = 0;
+        let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
 
         document.addEventListener('mousemove', (e) => {
           mouseX = e.clientX;
@@ -128,9 +92,8 @@
         });
 
         const animate = () => {
-          const lerp = 0.15;
-          ringX += (mouseX - ringX) * lerp;
-          ringY += (mouseY - ringY) * lerp;
+          ringX += (mouseX - ringX) * 0.15;
+          ringY += (mouseY - ringY) * 0.15;
           ring.style.left = `${ringX}px`;
           ring.style.top = `${ringY}px`;
           requestAnimationFrame(animate);
@@ -138,23 +101,12 @@
         animate();
 
         document.addEventListener('mouseover', (e) => {
-          const target = e.target;
-          const isInteractive = target.tagName === 'BUTTON' || 
-                              target.closest('button') || 
-                              target.tagName === 'A' || 
-                              target.closest('.cursor-trigger');
-          if (isInteractive) {
+          if (e.target.closest('button, a, .cursor-trigger')) {
             document.body.classList.add('cursor-hover');
           }
         });
-
         document.addEventListener('mouseout', (e) => {
-          const target = e.target;
-          const isInteractive = target.tagName === 'BUTTON' || 
-                              target.closest('button') || 
-                              target.tagName === 'A' || 
-                              target.closest('.cursor-trigger');
-          if (isInteractive) {
+          if (e.target.closest('button, a, .cursor-trigger')) {
             document.body.classList.remove('cursor-hover');
           }
         });
