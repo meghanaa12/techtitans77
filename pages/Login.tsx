@@ -5,7 +5,7 @@ import { supabase } from '../services/supabase';
 import { 
   BrainCircuit, Shield, GraduationCap, School, Globe, ArrowLeft, 
   ChevronRight, Lock, Users, Sparkles, AlertCircle, Mail, Key, Building2,
-  Calendar, BookOpen, Clock
+  Calendar, BookOpen, Clock, Zap
 } from 'lucide-react';
 
 interface LoginProps {
@@ -20,10 +20,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
   const [fullName, setFullName] = useState('');
   const [collegeName, setCollegeName] = useState('');
   const [department, setDepartment] = useState('');
-  const [semester, setSemester] = useState('1');
+  const [semester, setSemester] = useState('4');
   const [specialization, setSpecialization] = useState('');
   
   const [error, setError] = useState('');
+  const [isNetworkError, setIsNetworkError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkType | null>(null);
 
@@ -42,12 +43,33 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
       if (!department.trim()) { setError('Department is required.'); return false; }
     }
     setError('');
+    setIsNetworkError(false);
     return true;
+  };
+
+  const handleDemoBypass = () => {
+    onLogin({
+      id: 'demo-user-' + Math.random().toString(36).substr(2, 9),
+      name: fullName || 'Guest Scholar',
+      email: email || 'demo@cognihub.edu',
+      role: UserRole.STUDENT,
+      network: 'EDU',
+      points: 500,
+      xp: 120,
+      streak: 1,
+      badges: ['Beta Tester'],
+      collegeName: collegeName || 'Mount Carmel College',
+      department: department || 'Computer Science',
+      currentSemester: parseInt(semester) || 4,
+      specialization: specialization || 'AI'
+    });
   };
 
   const handleAuth = async (role: UserRole) => {
     if (!validate()) return;
     setIsLoading(true);
+    setError('');
+    setIsNetworkError(false);
     
     try {
       const network: NetworkType = role === UserRole.OUTSIDER ? 'GENERAL' : 'EDU';
@@ -101,25 +123,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
           specialization
         });
       } else {
-        const e = email.toLowerCase().trim();
-        if (e.includes('demo')) {
-           onLogin({
-              id: Math.random().toString(),
-              name: 'Demo Scholar',
-              email: e,
-              role,
-              network,
-              points: 1000,
-              xp: 2500,
-              streak: 12,
-              badges: ['Verified'],
-              collegeName: 'Demo Institute of Technology',
-              department: 'CS Engineering',
-              currentSemester: 4
-           });
-           return;
-        }
-
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
 
@@ -146,7 +149,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
         }
       }
     } catch (e: any) {
-      setError(e.message || 'Authentication failed.');
+      console.error("Auth Error:", e);
+      const isFetchError = e.message?.toLowerCase().includes('fetch');
+      setIsNetworkError(isFetchError);
+      setError(isFetchError 
+        ? "Network Error: Failed to connect to Supabase. Please check your Project URL and API Keys." 
+        : (e.message || 'Authentication failed. Please check your credentials.'));
     } finally {
       setIsLoading(false);
     }
@@ -203,7 +211,21 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
               <Key size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500" />
             </div>
 
-            {error && <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs font-bold flex items-center gap-2"><AlertCircle size={16} /> {error}</div>}
+            {error && (
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl space-y-3">
+                <div className="text-rose-400 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle size={16} /> {error}
+                </div>
+                {isNetworkError && (
+                  <button 
+                    onClick={handleDemoBypass}
+                    className="w-full py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                  >
+                    <Zap size={12} /> Enter Demo Mode (Bypass Auth)
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {!selectedNetwork ? (
@@ -237,7 +259,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                    <div className="relative group col-span-1">
                     <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">Semester</label>
                     <select value={semester} onChange={e => setSemester(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-indigo-500">
-                      {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s} className="bg-slate-900">Sem {s}</option>)}
+                      {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s} className="bg-slate-900 text-white">Sem {s}</option>)}
                     </select>
                   </div>
                   <div className="relative group col-span-1">
