@@ -10,59 +10,63 @@
     <style>
         body { 
           font-family: 'Inter', sans-serif; 
-          cursor: none !important; /* Force hide default cursor */
+          cursor: none !important; /* Hide default cursor */
+          background-color: #f8fafc;
         }
         
         /* Custom Mouse Follower */
         #cursor-dot {
           position: fixed;
-          width: 6px;
-          height: 6px;
+          width: 8px;
+          height: 8px;
           background: #6366f1;
           border-radius: 50%;
           pointer-events: none;
           z-index: 10000;
           transform: translate(-50%, -50%);
+          display: block;
         }
 
         #cursor-ring {
           position: fixed;
-          width: 30px;
-          height: 30px;
-          border: 1.5px solid rgba(99, 102, 241, 0.5);
+          width: 32px;
+          height: 32px;
+          border: 1.5px solid rgba(99, 102, 241, 0.4);
           border-radius: 50%;
           pointer-events: none;
           z-index: 9999;
           transform: translate(-50%, -50%);
-          transition: width 0.3s ease, height 0.3s ease, border 0.3s ease, background 0.3s ease;
+          transition: width 0.3s cubic-bezier(0.23, 1, 0.32, 1), height 0.3s cubic-bezier(0.23, 1, 0.32, 1), background 0.3s ease;
+          display: block;
         }
 
-        .cursor-active #cursor-ring {
-          width: 60px;
-          height: 60px;
-          background: rgba(99, 102, 241, 0.1);
-          border: 1px solid rgba(99, 102, 241, 0.2);
+        .cursor-hover #cursor-ring {
+          width: 50px;
+          height: 50px;
+          background: rgba(99, 102, 241, 0.08);
+          border-color: rgba(99, 102, 241, 0.6);
         }
 
         /* Animations */
         @keyframes float {
           0%, 100% { transform: translateY(0) rotate(0); }
-          50% { transform: translateY(-30px) rotate(8deg); }
+          50% { transform: translateY(-30px) rotate(10deg); }
         }
 
-        @keyframes float-reverse {
+        @keyframes float-alt {
           0%, 100% { transform: translateY(0) rotate(0); }
-          50% { transform: translateY(30px) rotate(-8deg); }
+          50% { transform: translateY(-20px) rotate(-8deg); }
         }
 
-        .animate-float { animation: float 8s ease-in-out infinite; }
-        .animate-float-slow { animation: float 12s ease-in-out infinite; }
-        .animate-float-reverse { animation: float-reverse 10s ease-in-out infinite; }
+        .animate-float { animation: float 10s ease-in-out infinite; }
+        .animate-float-slow { animation: float-alt 14s ease-in-out infinite; }
+        .animate-float-fast { animation: float 7s ease-in-out infinite; }
         
+        /* Entrance Animations */
         .staggered-in > * {
           opacity: 0;
           transform: translateY(20px);
-          animation: slideUp 0.6s ease forwards;
+          animation: slideUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
         }
 
         @keyframes slideUp {
@@ -70,16 +74,25 @@
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
-
+        
         /* Doodle Styling */
-        .doodle-path {
+        .doodle-svg {
           fill: none;
           stroke: currentColor;
-          stroke-width: 1.5;
+          stroke-width: 1.2;
           stroke-linecap: round;
           stroke-linejoin: round;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
         }
     </style>
+    <!-- Polyfill for process.env used by some libraries -->
+    <script>
+      window.process = { 
+        env: { 
+          NODE_ENV: 'production'
+        } 
+      };
+    </script>
 <script type="importmap">
 {
   "imports": {
@@ -94,7 +107,7 @@
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
+<body>
     <div id="cursor-dot"></div>
     <div id="cursor-ring"></div>
     <div id="root"></div>
@@ -110,29 +123,39 @@
         document.addEventListener('mousemove', (e) => {
           mouseX = e.clientX;
           mouseY = e.clientY;
-          dot.style.left = mouseX + 'px';
-          dot.style.top = mouseY + 'px';
+          dot.style.left = `${mouseX}px`;
+          dot.style.top = `${mouseY}px`;
         });
 
-        // Smooth follow for ring
-        function animate() {
-          ringX += (mouseX - ringX) * 0.15;
-          ringY += (mouseY - ringY) * 0.15;
-          ring.style.left = ringX + 'px';
-          ring.style.top = ringY + 'px';
+        const animate = () => {
+          const lerp = 0.15;
+          ringX += (mouseX - ringX) * lerp;
+          ringY += (mouseY - ringY) * lerp;
+          ring.style.left = `${ringX}px`;
+          ring.style.top = `${ringY}px`;
           requestAnimationFrame(animate);
-        }
+        };
         animate();
 
         document.addEventListener('mouseover', (e) => {
-          if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'A' || e.target.closest('.cursor-trigger')) {
-            document.body.classList.add('cursor-active');
+          const target = e.target;
+          const isInteractive = target.tagName === 'BUTTON' || 
+                              target.closest('button') || 
+                              target.tagName === 'A' || 
+                              target.closest('.cursor-trigger');
+          if (isInteractive) {
+            document.body.classList.add('cursor-hover');
           }
         });
 
         document.addEventListener('mouseout', (e) => {
-          if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'A' || e.target.closest('.cursor-trigger')) {
-            document.body.classList.remove('cursor-active');
+          const target = e.target;
+          const isInteractive = target.tagName === 'BUTTON' || 
+                              target.closest('button') || 
+                              target.tagName === 'A' || 
+                              target.closest('.cursor-trigger');
+          if (isInteractive) {
+            document.body.classList.remove('cursor-hover');
           }
         });
     </script>

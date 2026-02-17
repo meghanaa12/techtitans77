@@ -1,22 +1,22 @@
 
 import React, { useState } from 'react';
-import { UserRole, User, Resource } from './types';
-import Sidebar from './components/Sidebar';
-import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
-import Explore from './pages/Explore';
-import AdminPanel from './pages/AdminPanel';
-import Login from './pages/Login';
-import Landing from './pages/Landing';
-import Leaderboard from './pages/Leaderboard';
-import Communities from './pages/Communities';
+import { UserRole, User, Resource } from './types.ts';
+import Sidebar from './components/Sidebar.tsx';
+import Navbar from './components/Navbar.tsx';
+import Dashboard from './pages/Dashboard.tsx';
+import Explore from './pages/Explore.tsx';
+import AdminPanel from './pages/AdminPanel.tsx';
+import Login from './pages/Login.tsx';
+import Landing from './pages/Landing.tsx';
+import Leaderboard from './pages/Leaderboard.tsx';
+import Communities from './pages/Communities.tsx';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'explore' | 'admin' | 'leaderboard' | 'communities'>('dashboard');
 
-  // Initial Mock Resources matching the SQL demo
+  // Initial Mock Resources
   const [resources, setResources] = useState<Resource[]>([
     {
       id: 'r1',
