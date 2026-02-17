@@ -13,12 +13,19 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  network: NetworkType; // Strict network separation
+  network: NetworkType;
   points: number;
   xp: number;
   streak: number;
   badges: string[];
   avatar?: string;
+  collegeName?: string;
+  department?: string;
+  graduationYear?: number;
+  currentSemester?: number; // Added for students
+  specialization?: string;
+  officeHours?: string; // Added for teachers
+  bio?: string;
 }
 
 export type ResourceCategory = 'Question Paper' | 'Class Notes' | 'Study Material' | 'Reference Book' | 'Project Report' | 'Assignment';
@@ -38,7 +45,7 @@ export interface Resource {
   tags: string[];
   aiSummary?: string;
   fileUrl: string;
-  visibility: NetworkType | 'PUBLIC'; // Ensures content doesn't bleed across networks
+  visibility: NetworkType | 'PUBLIC';
 }
 
 export interface Community {

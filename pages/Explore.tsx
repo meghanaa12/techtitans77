@@ -1,20 +1,19 @@
 
 import React, { useState } from 'react';
-import { Resource, User, NetworkType } from '../types';
+import { Resource, User } from '../types';
 import { Search, Grid, List as ListIcon, SlidersHorizontal, Lock, Globe } from 'lucide-react';
 import ResourceCard from '../components/ResourceCard';
 
 interface ExploreProps {
   resources: Resource[];
   user: User;
+  onDownload?: (id: string) => void;
 }
 
-const Explore: React.FC<ExploreProps> = ({ resources, user }) => {
+const Explore: React.FC<ExploreProps> = ({ resources, user, onDownload }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // Logic to prevent network data merge
-  // Users only see content from their network or PUBLIC content.
   const filtered = resources.filter(r => {
     const isVisibleInNetwork = r.visibility === user.network || r.visibility === 'PUBLIC';
     const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -90,7 +89,7 @@ const Explore: React.FC<ExploreProps> = ({ resources, user }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map(resource => (
-          <ResourceCard key={resource.id} resource={resource} />
+          <ResourceCard key={resource.id} resource={resource} onDownload={onDownload} />
         ))}
       </div>
 

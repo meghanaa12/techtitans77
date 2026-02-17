@@ -6,17 +6,16 @@ import {
   Star, 
   Calendar, 
   Tag, 
-  FileText, 
-  MessageSquare,
   ChevronRight
 } from 'lucide-react';
 
 interface ResourceCardProps {
   resource: Resource;
   compact?: boolean;
+  onDownload?: (id: string) => void;
 }
 
-const ResourceCard: React.FC<ResourceCardProps> = ({ resource, compact = false }) => {
+const ResourceCard: React.FC<ResourceCardProps> = ({ resource, compact = false, onDownload }) => {
   const categoryColors: Record<string, string> = {
     'Question Paper': 'bg-rose-100 text-rose-600 border-rose-200',
     'Class Notes': 'bg-amber-100 text-amber-600 border-amber-200',
@@ -24,6 +23,13 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, compact = false }
     'Reference Book': 'bg-emerald-100 text-emerald-600 border-emerald-200',
     'Project Report': 'bg-purple-100 text-purple-600 border-purple-200',
     'Assignment': 'bg-slate-100 text-slate-600 border-slate-200',
+  };
+
+  const handleDownloadClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDownload) {
+      onDownload(resource.id);
+    }
   };
 
   return (
@@ -34,7 +40,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, compact = false }
         </span>
         <div className="flex items-center gap-1 text-amber-500 font-bold text-sm">
           <Star size={14} fill="currentColor" />
-          {resource.rating}
+          {resource.rating || 'New'}
         </div>
       </div>
 
@@ -62,11 +68,14 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, compact = false }
       <div className="flex items-center justify-between pt-4 border-t border-slate-50">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-600">
-            {resource.uploaderName.charAt(0)}
+            {resource.uploaderName?.charAt(0) || 'U'}
           </div>
-          <span className="text-xs font-semibold text-slate-700">{resource.uploaderName}</span>
+          <span className="text-xs font-semibold text-slate-700 truncate max-w-[100px]">{resource.uploaderName}</span>
         </div>
-        <button className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-indigo-600 transition-colors">
+        <button 
+          onClick={handleDownloadClick}
+          className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-indigo-600 transition-colors active:scale-95"
+        >
           <Download size={12} />
           {resource.downloads}
         </button>
