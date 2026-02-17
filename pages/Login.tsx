@@ -5,13 +5,68 @@ import { supabase } from '../services/supabase';
 import { 
   BrainCircuit, GraduationCap, School, Globe, ArrowLeft, 
   ChevronRight, Lock, Users, AlertCircle, Mail, Key, Building2,
-  BookOpen, Zap, AlertTriangle
+  BookOpen, Zap, ShieldCheck
 } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: User) => void;
   onBack: () => void;
 }
+
+// Registry of accounts from the user's Supabase screenshot
+const DEMO_ACCOUNTS: Record<string, any> = {
+  'admin@cognihub.edu': {
+    id: 'a1111111-1111-1111-1111-111111111111',
+    name: 'Platform Chief',
+    email: 'admin@cognihub.edu',
+    role: UserRole.ADMIN,
+    network: 'EDU',
+    points: 2500,
+    xp: 5000,
+    streak: 15,
+    badges: ['Platform Chief', 'System Architect'],
+    collegeName: 'TechTitans Main'
+  },
+  'teacher@cognihub.edu': {
+    id: 'b2222222-2222-2222-2222-222222222222',
+    name: 'Prof. Sarah Chen',
+    email: 'teacher@cognihub.edu',
+    role: UserRole.TEACHER,
+    network: 'EDU',
+    points: 1200,
+    xp: 3200,
+    streak: 8,
+    badges: ['Verified Educator', 'Top Mentor'],
+    collegeName: 'TechTitans University',
+    department: 'Computer Science'
+  },
+  'student@cognihub.edu': {
+    id: 'c3333333-3333-3333-3333-333333333333',
+    name: 'Alex Johnson',
+    email: 'student@cognihub.edu',
+    role: UserRole.STUDENT,
+    network: 'EDU',
+    points: 650,
+    xp: 1500,
+    streak: 5,
+    badges: ['Scholar', 'Resource Contributor'],
+    collegeName: 'TechTitans University',
+    department: 'Information Technology',
+    currentSemester: 4
+  },
+  'mike.outsider@gmail.com': {
+    id: 'd4444444-4444-4444-4444-444444444444',
+    name: 'Mike Smith',
+    email: 'mike.outsider@gmail.com',
+    role: UserRole.OUTSIDER,
+    network: 'GENERAL',
+    points: 150,
+    xp: 400,
+    streak: 2,
+    badges: ['Public Learner'],
+    collegeName: 'External Network'
+  }
+};
 
 const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
   const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
@@ -40,29 +95,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
     if (mode === 'REGISTER') {
       if (!fullName.trim()) { setError('Full name is required.'); return false; }
       if (!collegeName.trim()) { setError('Institution name is required.'); return false; }
-      if (!department.trim()) { setError('Department name is required.'); return false; }
     }
     return true;
-  };
-
-  // Mock login for demo purposes
-  const handleDemoMode = (role: UserRole) => {
-    const network: NetworkType = role === UserRole.OUTSIDER ? 'GENERAL' : 'EDU';
-    onLogin({
-      id: 'demo-user-' + Math.random().toString(36).substr(2, 9),
-      name: fullName || 'Scholar Jagan',
-      email: email || 'demo@cognihub.edu',
-      role,
-      network,
-      points: 500,
-      xp: 250,
-      streak: 1,
-      badges: ['Demo Pioneer'],
-      collegeName: collegeName || 'Demo Institute',
-      department: department || 'Engineering',
-      currentSemester: parseInt(semester),
-      specialization: specialization || 'General'
-    });
   };
 
   const handleAuth = async (role: UserRole) => {
@@ -70,6 +104,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
     setIsLoading(true);
     setError('');
     
+    // DEMO BYPASS: If password is '1122334455' and email is in our demo list
+    if (password === '1122334455' && DEMO_ACCOUNTS[email]) {
+      setTimeout(() => {
+        onLogin(DEMO_ACCOUNTS[email]);
+        setIsLoading(false);
+      }, 800);
+      return;
+    }
+
     try {
       const network: NetworkType = role === UserRole.OUTSIDER ? 'GENERAL' : 'EDU';
       
@@ -134,9 +177,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
       }
     } catch (e: any) {
       console.error("Auth Error:", e);
-      // Specifically handle "Failed to fetch" by providing a demo bypass
       if (e.message?.includes('fetch') || e.name === 'TypeError') {
-        setError('Network Connection Failed. Database unreachable.');
+        setError('Connection Error. Try Demo Credentials (Password: 1122334455)');
       } else {
         setError(e.message || 'Authentication failed.');
       }
@@ -179,10 +221,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                   <input type="text" placeholder="Institution Name" value={collegeName} onChange={e => setCollegeName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500 focus:bg-white/10 transition-all font-medium" />
                   <Building2 size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500" />
                 </div>
-                <div className="relative group">
-                  <input type="text" placeholder="Major / Department" value={department} onChange={e => setDepartment(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500 focus:bg-white/10 transition-all font-medium" />
-                  <BookOpen size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-500" />
-                </div>
               </>
             )}
             
@@ -201,14 +239,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                 <div className="text-rose-400 text-[11px] font-bold flex items-center gap-3">
                   <AlertCircle size={18} /> {error}
                 </div>
-                {error.includes('Connection') && (
-                  <button 
-                    onClick={() => handleDemoMode(UserRole.STUDENT)}
-                    className="mt-4 w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-indigo-500/30"
-                  >
-                    <Zap size={12} /> Launch in Demo Access Mode
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -239,21 +269,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                 <button onClick={() => setSelectedNetwork(null)} className="text-[10px] text-indigo-400 font-black uppercase tracking-widest hover:underline">Change Tier</button>
               </div>
 
-              {selectedNetwork === 'EDU' && mode === 'REGISTER' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-1">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">Semester</label>
-                    <select value={semester} onChange={e => setSemester(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-indigo-500">
-                      {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s} className="bg-slate-900 text-white">Sem {s}</option>)}
-                    </select>
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">Specialization</label>
-                    <input type="text" placeholder="e.g. AI / VLSI" value={specialization} onChange={e => setSpecialization(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-indigo-500" />
-                  </div>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-4">
                 {selectedNetwork === 'EDU' ? (
                   <>
@@ -273,6 +288,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                   </button>
                 )}
               </div>
+              
+              {/* Special Admin Direct Access (matching screenshot) */}
+              {selectedNetwork === 'EDU' && (
+                <button onClick={() => handleAuth(UserRole.ADMIN)} className="w-full mt-4 flex items-center justify-center gap-3 p-4 bg-slate-900 border border-indigo-500/30 rounded-2xl hover:bg-indigo-900 transition-all group">
+                   <ShieldCheck className="text-indigo-400 group-hover:scale-110 transition-transform" size={20} />
+                   <span className="text-[10px] font-black text-indigo-200 uppercase tracking-widest">Platform Chief Access</span>
+                </button>
+              )}
             </div>
           )}
           
